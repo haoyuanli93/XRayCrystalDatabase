@@ -1,3 +1,12 @@
+def get_debye_temperature(atom_type):
+    if atom_type in list(debye_temperature.keys()):
+        return debye_temperature[atom_type]
+    else:
+        raise Exception("Currently, the Debye temperature for the following elements are in " +
+                        "this database: \n" +
+                        "{}".format(list(debye_temperature.keys())))
+
+
 debye_temperature = {"Al": 428.,
                      "Be": 1440.,
                      "Cd": 209.,

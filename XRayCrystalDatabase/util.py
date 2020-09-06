@@ -1,14 +1,20 @@
 import numpy as np
 from scipy import interpolate
-from XRayCrystalDatabase import AtomDatabase
+from scipy import special
+
+from XRayCrystalDatabase.Database import DebyeDatabase, AtomDatabase
 
 # Define constant
 pi = np.pi
 two_pi = 2. * np.pi
 
 hbar = 0.0006582119514  # This is the reduced planck constant in keV/fs
+h = hbar / two_pi
 
 c = 299792458. * 1e-9  # The speed of light in um / fs
+k = 8.617333262145 * 1e-8  # The Boltzmann constant in keV/K
+na = 6.02214076 * 1e23  # The Avogadro's number
+r0 = 2.8179403227 * 1e-9  # The classical radius of electron
 
 
 # Define some conversion functions to remove dependence
@@ -38,6 +44,10 @@ def petahertz_angular_frequency_to_wave_number(angular_frequency):
 
 def wave_number_to_kev(wavevec):
     return wavevec * hbar * c
+
+
+def atomic_mass_to_kev(atomic_mass):
+    return atomic_mass * 9.3149410242 * 1e5
 
 
 #####################################################################################
@@ -72,7 +82,7 @@ def get_atomic_form_factor(atom_type, q_array):
     return form_factors
 
 
-def get_f_fp_fpp_and_mu_rho(atom_type, energies):
+def get_f0_f_fp_fpp_and_sigma_d(atom_type, energies):
     """
     Get the f, fp, and fpp value for the specific q value
 
@@ -89,6 +99,9 @@ def get_f_fp_fpp_and_mu_rho(atom_type, energies):
     q_array = kev_to_wave_number(energy=energies)
     # Get the atomic form factor
     f = get_atomic_form_factor(atom_type=atom_type, q_array=q_array)
+
+    # Get f0
+    f0 = float(AtomDatabase.get_atomic_number(atom_type=atom_type))
 
     # Get the reference data from the data base
     energies_ref = AtomDatabase.atom_info[atom_type]["chantler energies"]
@@ -108,8 +121,38 @@ def get_f_fp_fpp_and_mu_rho(atom_type, energies):
     mu_rho_spl = interpolate.splrep(x=q_ref, y=mu_rho_ref)
     mu_rho = interpolate.splev(q_array, mu_rho_spl)
 
-    return f, fp, fpp, mu_rho
+    # Get the atomic weight
+    mass_amu = AtomDatabase.get_atomic_mass(atom_type=atom_type)
+    sigma_d = mu_rho * mass_amu / na
+
+    return f0, f, fp, fpp, sigma_d
 
 
-def get_debye_waller_factor(h, temp=300):
-    pass
+def get_debye_coefficient(atom_type, temp=293.):
+    # Get Debye temperature
+    db_temp = DebyeDatabase.get_debye_temperature(atom_type=atom_type)
+
+    # Get ratio x
+    x = float(temp) / db_temp
+
+    # Get atomic mass
+    mass = AtomDatabase.get_atomic_mass(atom_type=atom_type)
+    mass_kev = atomic_mass_to_kev(atomic_mass=mass)
+
+    # Get the coefficient B
+    coef = 12. * (h ** 2) / (mass_kev * k * db_temp) * (special.erf(x) / x + 0.25)
+    return coef
+
+
+def get_debye_waller_factor(s, atom_type, temp=293.):
+    """
+    Assume that the reciprocal lattice corresponds to a plane distance of d.
+    Then s=1/(2d).
+
+    :param s:
+    :param atom_type:
+    :param temp:
+    :return:
+    """
+    coef = get_debye_coefficient(atom_type=atom_type, temp=temp)
+    return np.exp(-coef * (s ** 2))

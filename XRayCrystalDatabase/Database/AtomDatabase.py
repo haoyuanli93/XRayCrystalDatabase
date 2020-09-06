@@ -7,14 +7,21 @@ atom_name_list = ['C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si',
                   'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y']
 
 # load information for f' and f''
-with open("atom_database.pkl", 'rb') as infile:
+with open("./atom_database.pkl", 'rb') as infile:
     atom_info = pickle.load(infile)
 
 
-# Get wk coefficients
 def get_atomic_number(atom_type):
     if atom_type in atom_name_list:
         return int(atomic_number[atom_type])
+    else:
+        raise Exception("Sorry, at present, only the following elements can be \n "
+                        "processed automatically:{}".format(atom_name_list))
+
+
+def get_atomic_mass(atom_type):
+    if atom_type in atom_name_list:
+        return atomic_mass[atom_type]
     else:
         raise Exception("Sorry, at present, only the following elements can be \n "
                         "processed automatically:{}".format(atom_name_list))
@@ -45,6 +52,59 @@ def get_wk_coefficient(atom_type):
 #############################################################################
 #     wk table
 #############################################################################
+atomic_mass = {
+    "H": 1.00797,
+    "He": 4.00260,
+    "Li": 6.941,
+    "Be": 9.01218,
+    "B": 10.81,
+    "C": 12.011,
+    "N": 14.0067,
+    "O": 15.9994,
+    "F": 18.998403,
+    "Ne": 20.179,
+    "Na": 22.98977,
+    "Mg": 24.305,
+    "Al": 26.98154,
+    "Si": 28.0855,
+    "P": 30.97376,
+    "S": 32.06,
+    "Cl": 35.453,
+    "K": 39.0983,
+    "Ar": 39.948,
+    "Ca": 40.08,
+    "Sc": 44.9559,
+    "Ti": 47.90,
+    "V": 50.9415,
+    "Cr": 51.996,
+    "Mn": 54.9380,
+    "Fe": 55.847,
+    "Ni": 58.70,
+    "Co": 58.9332,
+    "Cu": 63.546,
+    "Zn": 65.38,
+    "Ga": 69.72,
+    "Ge": 72.59,
+    "As": 74.9216,
+    "Se": 78.96,
+    "Br": 79.904,
+    "Kr": 83.80,
+    "Rb": 85.4678,
+    "Sr": 87.62,
+    "Y": 88.9059,
+    "Zr": 91.22,
+    "Nb": 92.9064,
+    "Mo": 95.94,
+    "Ru": 101.07,
+    "Rh": 102.9055,
+    "Pd": 106.4,
+    "Ag": 107.868,
+    "Cd": 112.41,
+    "In": 114.82,
+    "Sn": 118.69,
+    "Sb": 121.75,
+    "I": 126.9045, }
+
 atomic_number = {"C": 6, "N": 7, "O": 8, "F": 9, "Ne": 10, "Na": 11,
                  "Mg": 12, "Al": 13, "Si": 14, "P": 15, "S": 16,
                  "Cl": 17, "Ar": 18, "K": 19, "Ca": 20, "Sc": 21,
