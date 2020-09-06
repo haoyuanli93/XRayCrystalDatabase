@@ -168,5 +168,12 @@ def get_chi0_and_chih(crystal_type, xray_energy_kev, miller_idx, temp=293.):
         chihi += sigma_d_holder[idx] * db_holder[idx] * phase_holder[idx]
     chihi *= - wavelength / (2 * np.pi * crystal_type.volume)
 
-    chih = chihr + 1.j * chihi
-    return chi0, chih
+    chih_sigma = chihr + 1.j * chihi
+
+    ####################################################
+    #   Calculate chih for pi polarization
+    ####################################################
+    cos2bragg = 1 - 2 * ((wavelength / (2. * distance)) ** 2)
+    chih_pi = chih_sigma * cos2bragg
+
+    return chi0, chih_sigma, chih_pi
