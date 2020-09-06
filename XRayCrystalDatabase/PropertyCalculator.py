@@ -5,6 +5,19 @@ from XRayCrystalDatabase import util
 ############################################################
 #         Define crystals
 ############################################################
+class Diamond:
+    def __init__(self):
+        # Define properties for the unit cell
+        self.a = 3.567 / 1e4  # um
+        self.b = self.a
+        self.c = self.a
+        self.volume = self.a * self.b * self.c
+
+        # Atom positions
+        self.atom_arrangement = [["C", np.array([0., 0., 0.])],
+                                 ["C", np.array([0.25, 0.25, 0.25]) * self.a]]
+
+
 class Silicon:
     def __init__(self):
         # Define properties for the unit cell
@@ -16,6 +29,19 @@ class Silicon:
         # Atom positions
         self.atom_arrangement = [["Si", np.array([0., 0., 0.])],
                                  ["Si", np.array([0.25, 0.25, 0.25]) * self.a]]
+
+
+class Germanium:
+    def __init__(self):
+        # Define properties for the unit cell
+        self.a = 5.658 / 1e4  # um
+        self.b = self.a
+        self.c = self.a
+        self.volume = self.a * self.b * self.c
+
+        # Atom positions
+        self.atom_arrangement = [["Ge", np.array([0., 0., 0.])],
+                                 ["Ge", np.array([0.25, 0.25, 0.25]) * self.a]]
 
 
 ############################################################
