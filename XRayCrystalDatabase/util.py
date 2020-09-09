@@ -4,57 +4,41 @@ from scipy import special
 
 from XRayCrystalDatabase.Database import DebyeDatabase, AtomDatabase
 
+"""
+The unit system in this package is 
+kg, m, s
+
+Especially, eV is only used for the incident photon energy
+"""
 # Define constant
 pi = np.pi
 two_pi = 2. * np.pi
 
-hbar = 0.0006582119514  # This is the reduced planck constant in keV/fs
-h = hbar / two_pi
+h = 6.62607015 * 1e-34  # Planck constant
+hbar = h / two_pi
 
-c = 299792458. * 1e-9  # The speed of light in um / fs
-k = 8.617333262145 * 1e-8  # The Boltzmann constant in keV/K
+c = 299792458.  # The speed of light
+k = 1.38064852 * 1e-23  # The Boltzmann constant
 na = 6.02214076 * 1e23  # The Avogadro's number
-r0 = 2.8179403227 * 1e-9  # The classical radius of electron
+r0 = 2.8179403262 * 1e-15  # The classical radius of electron
 
 
 # Define some conversion functions to remove dependence
-def kev_to_petahertz_frequency(energy):
-    return energy / hbar * 2 * pi
-
-
-def kev_to_petahertz_angular_frequency(energy):
-    return energy / hbar
-
-
-def kev_to_wave_number(energy):
+def kev_to_wave_number(energy_kev):
+    # Convert keV to Joule
+    energy = energy_kev * 1.6021773e-16
     return energy / hbar / c
 
 
-def petahertz_frequency_to_kev(frequency):
-    return hbar * 2 * pi * frequency
-
-
-def petahertz_angular_frequency_to_kev(angular_frequency):
-    return hbar * angular_frequency
-
-
-def petahertz_angular_frequency_to_wave_number(angular_frequency):
-    return angular_frequency / c
-
-
-def wave_number_to_kev(wavevec):
-    return wavevec * hbar * c
-
-
-def atomic_mass_to_kev(atomic_mass):
-    return atomic_mass * 9.3149410242 * 1e5
+def atomic_mass_to_kg(atomic_mass):
+    return atomic_mass * 1.6605402 * 1e-27
 
 
 #####################################################################################
 #          Database functions
 #####################################################################################
 
-def get_atomic_form_factor(atom_type, q_array):
+def get_atomic_form_factor(atom_type, s):
     """
     Get the atomic form factor for a specific atom for an array of different q values
     Here, q is defined as 2 pi / wave-length.
@@ -65,7 +49,7 @@ def get_atomic_form_factor(atom_type, q_array):
     carbon
 
     :param atom_type:
-    :param q_array:
+    :param s: Wave vector in m
     :return:
     """
     # Get the coefficient from the table
@@ -73,21 +57,23 @@ def get_atomic_form_factor(atom_type, q_array):
      c0, b1, b2, b3, b4, b5] = AtomDatabase.get_wk_coefficient(atom_type=atom_type)
 
     # Fit with the coefficient to get the form factors
-    form_factors = (a1 * np.exp(-b1 * q_array ** 2) +
-                    a2 * np.exp(-b2 * q_array ** 2) +
-                    a3 * np.exp(-b3 * q_array ** 2) +
-                    a4 * np.exp(-b4 * q_array ** 2) +
-                    a5 * np.exp(-b5 * q_array ** 2) + c0)
+    s_square = s ** 2
+    form_factors = (a1 * np.exp(-b1 * s_square) +
+                    a2 * np.exp(-b2 * s_square) +
+                    a3 * np.exp(-b3 * s_square) +
+                    a4 * np.exp(-b4 * s_square) +
+                    a5 * np.exp(-b5 * s_square) + c0)
 
     return form_factors
 
 
-def get_f0_f_fp_fpp_and_sigma_d(atom_type, energies):
+def get_f0_f_fp_fpp_and_sigma_d(atom_type, energy_kev, s):
     """
     Get the f, fp, and fpp value for the specific q value
 
     :param atom_type:
-    :param energies:
+    :param energy_kev:
+    :param s: Assume that the lattice plane distance is d. Then s = 1/2d
     :return:
     """
 
@@ -96,34 +82,35 @@ def get_f0_f_fp_fpp_and_sigma_d(atom_type, energies):
         raise Exception("Sorry, at present, only the following elements can be \n "
                         "processed automatically:{}".format(AtomDatabase.atom_name_list))
 
-    q_array = kev_to_wave_number(energy=energies)
     # Get the atomic form factor
-    f = get_atomic_form_factor(atom_type=atom_type, q_array=q_array)
+    f = get_atomic_form_factor(atom_type=atom_type, s=s)
 
     # Get f0
     f0 = float(AtomDatabase.get_atomic_number(atom_type=atom_type))
 
     # Get the reference data from the data base
     energies_ref = AtomDatabase.atom_info[atom_type]["chantler energies"]
-
     fp_ref = AtomDatabase.atom_info[atom_type]["fp values"]
     fpp_ref = AtomDatabase.atom_info[atom_type]["fpp values"]
-    mu_rho_ref = AtomDatabase.atom_info[atom_type]["mu over rho"]
-    q_ref = kev_to_wave_number(energy=energies_ref)
+    # mu_rho_ref = AtomDatabase.atom_info[atom_type]["mu over rho"]
 
     # Use interpolation to find the desired value for the desired q value.
-    fp_spl = interpolate.splrep(x=q_ref, y=fp_ref)
-    fp = interpolate.splev(q_array, fp_spl)
+    fp_spl = interpolate.splrep(x=energies_ref, y=fp_ref)
+    fp = interpolate.splev(energy_kev, fp_spl)
 
-    fpp_spl = interpolate.splrep(x=q_ref, y=fpp_ref)
-    fpp = interpolate.splev(q_array, fpp_spl)
+    fpp_spl = interpolate.splrep(x=energies_ref, y=fpp_ref)
+    fpp = interpolate.splev(energy_kev, fpp_spl)
 
-    mu_rho_spl = interpolate.splrep(x=q_ref, y=mu_rho_ref)
-    mu_rho = interpolate.splev(q_array, mu_rho_spl)
+    # mu_rho_spl = interpolate.splrep(x=energies_ref, y=mu_rho_ref)
+    # mu_rho = interpolate.splev(energy_kev, mu_rho_spl)
 
     # Get the atomic weight
-    mass_amu = AtomDatabase.get_atomic_mass(atom_type=atom_type)
-    sigma_d = mu_rho * mass_amu / na
+    # mass_amu = AtomDatabase.get_atomic_mass(atom_type=atom_type)
+    # sigma_d = mu_rho * mass_amu / na
+
+    # Get wave length
+    wavelength = 2. * np.pi / kev_to_wave_number(energy_kev=energy_kev)
+    sigma_d = fpp * 2 * wavelength * r0
 
     return f0, f, fp, fpp, sigma_d
 
@@ -137,10 +124,10 @@ def get_debye_coefficient(atom_type, temp=293.):
 
     # Get atomic mass
     mass = AtomDatabase.get_atomic_mass(atom_type=atom_type)
-    mass_kev = atomic_mass_to_kev(atomic_mass=mass)
+    mass_kg = atomic_mass_to_kg(atomic_mass=mass)
 
     # Get the coefficient B
-    coef = 12. * (h ** 2) / (mass_kev * k * db_temp) * (special.erf(x) / x + 0.25)
+    coef = 12. * (h ** 2) / (mass_kg * k * db_temp) * (special.erf(x) / x + 0.25)
     return coef
 
 
@@ -154,5 +141,7 @@ def get_debye_waller_factor(s, atom_type, temp=293.):
     :param temp:
     :return:
     """
+    # print("s = 1/2d = ", s)
+
     coef = get_debye_coefficient(atom_type=atom_type, temp=temp)
     return np.exp(-coef * (s ** 2))

@@ -1,13 +1,15 @@
 import numpy as np
 import pickle
+import os
 
 atom_name_list = ['C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si',
                   'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
                   'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge',
                   'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y']
 
+current_location = os.path.dirname(os.path.abspath(__file__))
 # load information for f' and f''
-with open("./atom_database.pkl", 'rb') as infile:
+with open(os.path.join(current_location, "atom_database.pkl"), 'rb') as infile:
     atom_info = pickle.load(infile)
 
 
