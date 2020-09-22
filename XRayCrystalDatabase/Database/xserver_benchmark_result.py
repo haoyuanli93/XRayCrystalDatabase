@@ -2,6 +2,8 @@
 This notebook contains chi0, chih sigma and chih pi for
 8,9,10,11 keV X-ray photon energies for silicon, diamond
 and germanium crystals.
+
+The data are from https://x-server.gmca.aps.anl.gov/x0h.html
 """
 
 silicon_8kev = {"1,1,1", {"chi0": complex(-0.15310E-04, 0.35783E-06),
